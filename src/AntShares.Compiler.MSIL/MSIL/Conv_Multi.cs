@@ -525,12 +525,35 @@ namespace AntShares.Compiler.MSIL
             if (type != "System.Byte")
             {
                 _Convert1by1(VM.OpCode.NEWARRAY, src, to);
+                int n = method.GetNextCodeAddr(src.addr);
+                int n2 = method.GetNextCodeAddr(n);
+                int n3 = method.GetNextCodeAddr(n2);
+                if (n >= 0 && n2 >= 0 && n3 >= 0 && method.body_Codes[n].code == CodeEx.Dup && method.body_Codes[n2].code == CodeEx.Ldtoken && method.body_Codes[n3].code == CodeEx.Call)
+                {//這是在初始化數組
+                    var data = method.body_Codes[n2].tokenUnknown as byte[];
+                    if (type == "System.Char")
+                    {
+                        for (var i = 0; i < data.Length; i += 2)
+                        {
+                            char info = BitConverter.ToChar(data, i);
+                            _Convert1by1(VM.OpCode.DUP,null,to);
+                            _ConvertPush(i / 2, null, to);
+                            _ConvertPush(info, null, to);
+                            _Convert1by1(VM.OpCode.SETITEM, null, to);
+                        }
+                        return 3;
+                    }
+                    throw new Exception("not support this type's init array.");
+
+                }
                 return 0;
                 //this.logger.Log("_ConvertNewArr::not support type " + type + " for array.");
             }
             else
             {
                 var code = to.body_Codes.Last().Value;
+
+
                 //we need a number
                 if (code.code > AntShares.VM.OpCode.PUSH16)
                 {
@@ -547,7 +570,7 @@ namespace AntShares.Compiler.MSIL
                 int n = method.GetNextCodeAddr(src.addr);
                 int n2 = method.GetNextCodeAddr(n);
                 int n3 = method.GetNextCodeAddr(n2);
-                if (method.body_Codes[n].code == CodeEx.Dup && method.body_Codes[n2].code == CodeEx.Ldtoken && method.body_Codes[n3].code == CodeEx.Call)
+                if (n >= 0 && n2 >= 0 && n3 >= 0 && method.body_Codes[n].code == CodeEx.Dup && method.body_Codes[n2].code == CodeEx.Ldtoken && method.body_Codes[n3].code == CodeEx.Call)
                 {//這是在初始化數組
 
                     var data = method.body_Codes[n2].tokenUnknown as byte[];
